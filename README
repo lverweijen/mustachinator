@@ -1,0 +1,50 @@
+This program draws a mustache on an image, video or webcam stream.
+It should theoretically work on all platforms but has only been tested on
+linux.
+
+It has been developed on a platform with the following packages installed.
+- OpenCV 2.3
+- Python 2.7
+- python-numpy 1.6
+
+Instructions for installing opencv can be found on:
+http://opencv.willowgarage.com/wiki/InstallGuide
+Make sure to compile with python bindings.
+
+Here are shortcuts when using mustachinator with a camera:
+    (space) - toggle pause
+    q       - quit
+    d       - toggle debug mode
+    m       - toggle mustache
+    b       - toggle black mustache
+    r       - reset
+
+The code is divided over the files as follows:
+    mustachinator - frontend
+    mustache.py - all recognizing stuff
+    shapes.py - helper class containg geometric shapes
+    filter.py - contains the Kalman filter
+
+Test data can be found on http://www.vision.caltech.edu/html-ﬁles/.
+
+
+usage: mustachinator [-h] [-c CAMERA] [-o OUTPUT] [-d] [filename]
+
+Draws a mustache on a face. When no arguments are specified it will use the
+webcam as input source.
+
+positional arguments:
+  filename              use this image or video file as input
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c CAMERA, --camera CAMERA
+                        use a camera with this index
+  -o OUTPUT, --output OUTPUT
+                        save the resulting image in this file
+  -d, --debug           draw intermediate output like mouth, nose and eyes
+  -b, --black           draws a black mustache
+
+Report bugs to l.f.verweijen@student.tudelft.nl
+
+

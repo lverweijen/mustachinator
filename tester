@@ -1,0 +1,6 @@
+#!/usr/bin/bash
+
+for i in {0001..0450..5}; do 
+    echo $i; 
+    ./mustachinator faces/image_$i.jpg
+done

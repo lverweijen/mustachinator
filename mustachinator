@@ -1,0 +1,138 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+import argparse
+import cv2
+import numpy as np
+from mustache import MustacheRecognizer
+
+
+def main():
+    """Parse command line arguments"""
+    parser = argparse.ArgumentParser(
+            description="""Draws a mustache on a face.
+                    When no arguments are specified it will use the webcam as
+                    input source.""",
+            epilog="Report bugs to l.f.verweijen@student.tudelft.nl")
+    parser.add_argument("filename", nargs="?",
+                        help="use this image or video file as input")
+    parser.add_argument("-c", "--camera",
+                        help="use a camera with this index", type=int)
+    parser.add_argument("-o", "--output",
+                        help="save the resulting image in this file")
+    parser.add_argument("-d", "--debug", action="store_true",
+                        help="draw intermediate output like mouth, nose and eyes")
+    parser.add_argument("-b", "--black", action="store_true",
+                        help="draws a black mustache")
+    args = parser.parse_args()
+
+    # We either got an image or a video.
+    if args.filename:
+        data = cv2.imread(args.filename)
+        if data is not None:
+            processed = process_image(data, args.debug, args.black)
+            if args.output:
+                cv2.imwrite(args.output, processed)
+            else:
+                cv2.imshow("Result", processed)
+                cv2.waitKey()
+        else:
+            data = cv2.VideoCapture()
+            if data.open(args.filename):
+                GUI(data, black=args.black).run()
+            else:
+                exit("Invalid file specified {}".format(args.filename))
+
+    # Otherwise just open the webcam
+    else:
+        camera = args.camera
+        if camera is None:
+            camera = -1
+        GUI(cv2.VideoCapture(camera), mirror=True, black=args.black).run()
+
+
+def process_image(image, debug=False, black=False):
+    """Process a single image."""
+    recognizer = MustacheRecognizer(black=black)
+    recognizer.frame = image
+
+    for i in range(5):
+        recognizer.update()
+    if debug:
+        recognizer.debug()
+
+    recognizer.draw_mustache()
+    return recognizer.output
+
+
+class GUI(object):
+    """Show frame by frame what is happening and try to process everything
+    in real time."""
+    def __init__(self, capture, mirror=False, black=False):
+        """@todo: to be defined """
+        self.step = 0
+        self.key = 0
+        self.isRunning = True
+        self.isUpdating = True
+        self.isDebugging = False
+        self.showMustache = True
+        self.mirror = mirror
+
+        self.cam = capture
+        self.moustache_recognizer = MustacheRecognizer(black=black)
+
+    def update_camera(self):
+        """Get next camera frame."""
+        succes, self.frame = self.cam.read()
+
+        if succes:
+            self.moustache_recognizer.frame = self.frame
+        return succes
+
+    def update(self):
+        """Perform detection and gui update."""
+        if self.isUpdating:
+            self.update_camera()
+            self.moustache_recognizer.update(True)
+
+            if self.showMustache:
+                self.moustache_recognizer.draw_mustache()
+
+            if self.isDebugging:
+                self.moustache_recognizer.debug()
+
+            if self.mirror:
+                frame = np.ascontiguousarray(
+                        self.moustache_recognizer.output[:, ::-1, :])
+            else:
+                frame = np.ascontiguousarray(
+                        self.moustache_recognizer.output)
+            cv2.imshow("Frame", frame)
+
+        # Handle keyboard
+        key = cv2.waitKey(10)
+        if key == ord('q'):
+            self.isRunning = False
+        elif key == ord(' '):
+            self.isUpdating = not self.isUpdating
+        elif key == ord('d'):
+            self.isDebugging = not self.isDebugging
+        elif key == ord('b'):
+            self.moustache_recognizer.black = not self.moustache_recognizer.black
+
+            if self.moustache_recognizer.black:
+                self.moustache_recognizer.skin_color = None
+                self.moustache_recognizer.hair_color = None
+        elif key == ord('m'):
+            self.showMustache = not self.showMustache
+        elif key == ord('r'):
+            self.moustache_recognizer.reset()
+
+    def run(self):
+        """Run GUI."""
+        while self.isRunning:
+            self.update()
+
+
+if __name__ == '__main__':
+    main()
